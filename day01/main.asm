@@ -45,7 +45,7 @@ main:
 	mov [rbp - 32], rax
 
 	mov rcx, 0
-	mov qword [rbp - 8], 0 ; Dial value
+	mov qword [rbp - 8], 50 ; Dial value
 
 
 ; RCX is the buffer index
@@ -81,22 +81,42 @@ main:
 
 .dial:
 	; Check which way to turn the dial
-	cmp rdx, 'A'
-	jge .pos
+	cmp rdx, 'R'
+	je .pos
 
 .neg:
 	sub [rbp - 8], rdi
-	jmp .end_loop
+	jmp .modulo
 
 .pos:
 	add [rbp - 8], rdi
 
-.end_loop:
+.modulo:
+	; Computes signed modulo of dial
+	mov rax, [rbp - 8]
+	mov rcx, 100
+	cqo
+	idiv rcx
+	mov [rbp - 8], rdx
+
+	; Make result positive if negative
+	cmp rdx, 0
+	jge .skip_adjust
+	add qword [rbp - 8], 100
+
+.skip_adjust:
+	; Check if Dial points on 0
+	mov rax, [rbp - 8]
+	test rax, rax
+	jnz .next
+	add qword [rbp - 16], 1
+
+.next:
 	add rcx, 1
 	jmp .loop
 
 .end:
-	mov rdi, [rbp - 8]
+	mov rdi, [rbp - 16]
 	call .print_number
 
 	push 0
