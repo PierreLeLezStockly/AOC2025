@@ -33,12 +33,13 @@ main:
 	mov rax, 0
 	mov rdi, [rbp - 8]
 	mov rsi, buffer
-	mov rdx, 4096
+	mov rdx, 4095
 	syscall
 
-	; Check for error then store bytes read
+	; Check for error then NULL-terminate the buffer
 	cmp rax, 0
 	jl .error
+	mov word [buffer + rax + 1], 0
 	mov [rbp - 16], rax
 
 	; Print buffer
