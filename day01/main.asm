@@ -9,7 +9,7 @@ section .data
 ; This makes things MUUUUUCH easier
 section .bss
 	buffer resb 4096
-	output_byte resb 1
+	output resb 21 ; 20 digits for 64-bit number + 1 for newline
 
 section .text
 	global main
@@ -41,11 +41,12 @@ main:
 	; Check for error then NULL-terminate the buffer
 	cmp rax, 0
 	jl .error
-	mov byte [buffer + rax + 1], 0
+	mov byte [buffer + rax], 0
 	mov [rbp - 32], rax
 
 	mov rcx, 0
 	mov qword [rbp - 8], 0 ; Dial value
+
 
 ; RCX is the buffer index
 ; RDX gets the letter ('L' or 'R')
@@ -66,6 +67,7 @@ main:
 	add rdi, rsi
 
 	; Check if second digit
+	add rcx, 1
 	movzx rsi, byte [buffer + rcx]
 	cmp rsi, 10 ; \n
 	je .dial
@@ -78,8 +80,8 @@ main:
 
 .dial:
 	; Check which way to turn the dial
-	cmp rdx, 'R'
-	je .pos
+	cmp rdx, 'A'
+	jge .pos
 
 .neg:
 	sub [rbp - 8], rdi
@@ -93,10 +95,48 @@ main:
 	jmp .loop
 
 .end:
-
+	mov rdi, [rbp - 8]
+	call .print_number
 
 	push 0
 	jmp .exit
+
+
+; Assumes its a u64
+; Input in RDI
+.print_number:
+	mov rsi, output + 20
+	mov byte [rsi], 0
+	dec rsi
+	mov byte [rsi], 10
+
+	mov rax, 1
+	mov rcx, 10
+
+.convert_loop:
+	; Computes RAX / RCX
+	; RAX gets the quotient, RDX gets the remainder
+	mov rdx, 0
+	div rcx
+
+	; Convert digit to ascii and write it into the buffer
+	add dl, '0'
+	dec rsi
+	mov [rsi], dl
+
+	; Check if quotient is 0
+	test rax, rax
+	jnz .convert_loop
+
+.print:
+	; Computes length
+	mov rdx, output + 20
+	sub rdx, rsi
+
+	mov rax, 1
+	mov rdi, 1
+	syscall
+	ret
 
 .error:
 	mov rax, 1 ; sys_write
