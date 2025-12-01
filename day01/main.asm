@@ -9,7 +9,7 @@ section .data
 ; This makes things MUUUUUCH easier
 section .bss
 	buffer resb 32001
-	output resb 21 ; 20 digits for 64-bit number + 1 for newline
+	output resb 20 ; 20 digits for 64-bit number
 
 section .text
 	global main
@@ -47,7 +47,6 @@ main:
 	mov rcx, 0
 	mov qword [rbp - 16], 0
 	mov qword [rbp - 8], 50 ; Dial value
-
 
 ; RCX is the buffer index
 ; RDX gets the letter ('L' or 'R')
@@ -122,9 +121,7 @@ main:
 ; Assumes its a u64
 ; Input in RDI
 .print_number:
-	mov rsi, output + 20
-	mov byte [rsi], 0
-	dec rsi
+	mov rsi, output + 19
 	mov byte [rsi], 10
 
 	mov rax, rdi
