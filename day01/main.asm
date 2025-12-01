@@ -45,6 +45,7 @@ main:
 	mov [rbp - 32], rax
 
 	mov rcx, 0
+	mov qword [rbp - 16], 0
 	mov qword [rbp - 8], 50 ; Dial value
 
 
@@ -78,6 +79,7 @@ main:
 	imul rdi, 10
 	sub rsi, '0'
 	add rdi, rsi
+	add rcx, 1
 
 .dial:
 	; Check which way to turn the dial
@@ -94,9 +96,9 @@ main:
 .modulo:
 	; Computes signed modulo of dial
 	mov rax, [rbp - 8]
-	mov rcx, 100
+	mov r8, 100
 	cqo
-	idiv rcx
+	idiv r8
 	mov [rbp - 8], rdx
 
 	; Make result positive if negative
@@ -121,7 +123,6 @@ main:
 
 	push 0
 	jmp .exit
-
 
 ; Assumes its a u64
 ; Input in RDI
