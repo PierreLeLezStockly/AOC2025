@@ -8,7 +8,7 @@ section .data
 ; Assumes it will fit the entire input
 ; This makes things MUUUUUCH easier
 section .bss
-	buffer resb 4096
+	buffer resb 32001
 	output resb 21 ; 20 digits for 64-bit number + 1 for newline
 
 section .text
@@ -35,7 +35,7 @@ main:
 	mov rax, 0
 	mov rdi, [rbp - 24]
 	mov rsi, buffer
-	mov rdx, 4095
+	mov rdx, 32000
 	syscall
 
 	; Check for error then NULL-terminate the buffer
@@ -65,21 +65,16 @@ main:
 .get_number:
 	; Add the first digit
 	movzx rsi, byte [buffer + rcx]
-	sub rsi, '0'
-	add rdi, rsi
-
-	; Check if second digit
-	add rcx, 1
-	movzx rsi, byte [buffer + rcx]
 	cmp rsi, 10 ; \n
 	je .dial
-	cmp rsi, 0 ; last line might not have a \n
+	cmp rsi, 0
 	je .dial
 
 	imul rdi, 10
 	sub rsi, '0'
 	add rdi, rsi
 	add rcx, 1
+	jmp .get_number
 
 .dial:
 	; Check which way to turn the dial
