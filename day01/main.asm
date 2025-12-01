@@ -2,7 +2,7 @@ section .data
 	filename db "input.txt", 0
 	filename_len equ $-filename
 
-	err_msg db "Error\n", 0
+	err_msg db "Error", 10, 0
 	err_msg_len equ $-err_msg
 
 ; Assumes it will fit the entire input
@@ -18,6 +18,7 @@ main:
 	mov rbp, rsp
 	sub rsp, 16 ; [rbp - 8] for FD, [rbp - 16] for bytes read
 
+.load_input:
 	; Open input file
 	mov rax, 2 ; sys_open
 	mov rdi, filename
@@ -49,11 +50,8 @@ main:
 	mov rdx, [rbp - 16]
 	syscall
 
-	; Exit cleanly
-	mov rax, 60
-	mov rdi, 0
-	syscall
-
+	push 0
+	jmp .exit
 
 .error:
 	mov rax, 1 ; sys_write
@@ -62,6 +60,11 @@ main:
 	mov rdx, err_msg_len
 	syscall
 	
-	mov rax, 60 ; sys_exit
-	mov rdi, 1
+	push 1
+	jmp .exit
+
+; Assumes exit code is on top of the stack
+.exit:
+	pop rdi
+	mov rax, 60 ;sys_exit
 	syscall
