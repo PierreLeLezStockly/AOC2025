@@ -1,20 +1,66 @@
 section .data
-    filename db "input.txt", 0
+	filename db "input.txt", 0
+	filename_len equ $-filename
 
+	err_msg db "Error\n", 0
+	err_msg_len equ $-err_msg
+
+; Assumes it will fit the entire input
+; This makes things MUUUUUCH easier
 section .bss
-    buffer resb 4096
+	buffer resb 4096
 
 section .text
-    global main
+	global main
 
 main:
-    mov rax, 1          ; syscall: write
-    mov rdi, 1          ; file descriptor: stdout
-    mov rsi, msg        ; pointer to message
-    mov rdx, len        ; message length
-    syscall
-    mov rax, 60         ; syscall: exit
-    xor rdi, rdi        ; exit code 0
-    syscall
-    leave
-    ret
+	push rbp
+	mov rbp, rsp
+	sub rsp, 16 ; [rbp - 8] for FD, [rbp - 16] for bytes read
+
+	; Open input file
+	mov rax, 2 ; sys_open
+	mov rdi, filename
+	mov rsi, 0 ; O_RDONLY
+	syscall
+
+	; Check for error then store FD
+	cmp rax, 0
+	jl .error
+	mov [rbp - 8], rax
+
+	; Read in buffer
+	mov rax, 0
+	mov rdi, [rbp - 8]
+	mov rsi, buffer
+	mov rdx, 4096
+	syscall
+
+	; Check for error then store bytes read
+	cmp rax, 0
+	jl .error
+	mov [rbp - 16], rax
+
+	; Print buffer
+	mov rax, 1
+	mov rdi, 1
+	mov rsi, buffer
+	mov rdx, [rbp - 16]
+	syscall
+
+	; Exit cleanly
+	mov rax, 60
+	mov rdi, 0
+	syscall
+
+
+.error:
+	mov rax, 1 ; sys_write
+	mov rdi, 2
+	mov rsi, err_msg
+	mov rdx, err_msg_len
+	syscall
+	
+	mov rax, 60 ; sys_exit
+	mov rdi, 1
+	syscall
