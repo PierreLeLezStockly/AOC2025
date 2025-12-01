@@ -9,6 +9,7 @@ section .data
 ; This makes things MUUUUUCH easier
 section .bss
 	buffer resb 4096
+	output_byte resb 1
 
 section .text
 	global main
@@ -16,7 +17,7 @@ section .text
 main:
 	push rbp
 	mov rbp, rsp
-	sub rsp, 16 ; [rbp - 8] for FD, [rbp - 16] for bytes read
+	sub rsp, 32 ; [rbp - 8] for dial value, [rbp - 16] for total, [rbp - 24] for FD, [rbp - 32] for bytes read
 
 .load_input:
 	; Open input file
@@ -28,11 +29,11 @@ main:
 	; Check for error then store FD
 	cmp rax, 0
 	jl .error
-	mov [rbp - 8], rax
+	mov [rbp - 24], rax
 
 	; Read in buffer
 	mov rax, 0
-	mov rdi, [rbp - 8]
+	mov rdi, [rbp - 24]
 	mov rsi, buffer
 	mov rdx, 4095
 	syscall
@@ -40,15 +41,59 @@ main:
 	; Check for error then NULL-terminate the buffer
 	cmp rax, 0
 	jl .error
-	mov word [buffer + rax + 1], 0
-	mov [rbp - 16], rax
+	mov byte [buffer + rax + 1], 0
+	mov [rbp - 32], rax
 
-	; Print buffer
-	mov rax, 1
-	mov rdi, 1
-	mov rsi, buffer
-	mov rdx, [rbp - 16]
-	syscall
+	mov rcx, 0
+	mov qword [rbp - 8], 0 ; Dial value
+
+; RCX is the buffer index
+; RDX gets the letter ('L' or 'R')
+; RSI gets the digit
+; RDI gets the number (0 to 99)
+.loop:
+	; Get next byte and check for buffer end
+	movzx rdx, byte [buffer + rcx]
+	cmp rdx, 0
+	je .end
+
+	mov rdi, 0
+
+.get_number:
+	; Add the first digit
+	movzx rsi, byte [buffer + rcx]
+	sub rsi, '0'
+	add rdi, rsi
+
+	; Check if second digit
+	movzx rsi, byte [buffer + rcx]
+	cmp rsi, 10 ; \n
+	je .dial
+	cmp rsi, 0 ; last line might not have a \n
+	je .dial
+
+	imul rdi, 10
+	sub rsi, '0'
+	add rdi, rsi
+
+.dial:
+	; Check which way to turn the dial
+	cmp rdx, 'R'
+	je .pos
+
+.neg:
+	sub [rbp - 8], rdi
+	jmp .end_loop
+
+.pos:
+	add [rbp - 8], rdi
+
+.end_loop:
+	add rcx, 1
+	jmp .loop
+
+.end:
+
 
 	push 0
 	jmp .exit
