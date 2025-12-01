@@ -59,6 +59,7 @@ main:
 	je .end
 
 	mov rdi, 0
+	add rcx, 1
 
 .get_number:
 	; Add the first digit
@@ -110,7 +111,7 @@ main:
 	dec rsi
 	mov byte [rsi], 10
 
-	mov rax, 1
+	mov rax, rdi
 	mov rcx, 10
 
 .convert_loop:
